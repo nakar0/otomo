@@ -1,3 +1,4 @@
 .envrc
 docker-compose.override.yaml
 .docker
+.DS_Store

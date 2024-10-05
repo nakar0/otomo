@@ -1,6 +1,50 @@
 # Chat Flow
 
-## First
+## Current
+
+```plantuml
+@startuml
+
+actor  User as user
+participant "Cloud Run" as cr
+queue "Cloud Run: EventBus\n(should be PubSub or something)" as bus
+database Firestore as fs
+participant "Firebase Function" as ff
+participant Batch as batch
+
+user --> fs: Observe messages
+
+user --> cr: Observe instant reply with stream
+cr --> bus: Subscribe instant reply
+
+group Send (Currently, via Cloud Run)
+    user -> fs: Add a message
+end
+
+group Reply
+    ff --> fs: Observe adding users' message
+    ff -> cr: Ask to reply
+    cr -> bus: Publish instant reply
+    cr -> cr: Make a summarized memory
+    cr -> fs: Add the reply & update the memory
+    cr -> fs: [Async] Extract places and geocode it from the reply & update the reply
+end
+
+
+group Send a message actively
+    batch -> cr: Ask to create a message
+    cr -> bus: Publish instant reply
+    cr -> cr: Make a summarized memory
+    cr -> fs: Add the reply & update the memory
+    cr -> fs: [Async] Extract places and geocode it from the reply & update the reply
+end
+
+
+@enduml
+```
+
+<details>
+<summary>First</summary>
 
 ```plantuml
 @startuml
@@ -29,7 +73,10 @@ end
 @enduml
 ```
 
-## Ideal
+</details>
+
+<details>
+<summary>Ideal?</summary>
 
 ```plantuml
 @startuml
@@ -77,51 +124,4 @@ end
 @enduml
 ```
 
-## Compromise
-
-```plantuml
-@startuml
-
-actor  User as user
-participant "Cloud Run" as cr
-queue "Cloud Run: EventBus" as bus
-database Firestore as fs
-participant "Firebase Function" as ff
-participant Batch as batch
-
-user --> fs: Observe messages
-
-user --> cr: Observer replying
-cr --> bus: Observer replying event
-
-group Send
-    user -> cr: Send a message
-    cr -> fs: Add the message
-    cr -> user: Response the message
-end
-
-group List
-    user -> cr: List messages
-    cr -> fs: Fetch messages
-    cr -> user: Response messages
-end
-
-group Reply
-    ff --> fs: Observe user messages
-    ff -> cr: Ask to reply
-    cr -> bus: Make a reply & publish replying
-    cr -> cr: Make a memory summary
-    cr -> fs: Add the reply & update the memory
-end
-
-
-group Active message
-    batch -> cr: Ask to create a message
-    cr -> bus: Make a reply & publish replying
-    cr -> cr: Make a memory summary
-    cr -> fs: Add the reply & update the memory
-end
-
-
-@enduml
-```
+</details>
